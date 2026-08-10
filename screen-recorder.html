@@ -1,0 +1,826 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Screen Recorder — 100% Lokal</title>
+<style>
+  /* ============ Design Tokens ============ */
+  :root {
+    color-scheme: dark;
+    --bg-0: #06060b;
+    --surface: rgba(255, 255, 255, .045);
+    --surface-strong: rgba(255, 255, 255, .09);
+    --border: rgba(255, 255, 255, .09);
+    --text-1: #f5f5fa;
+    --text-2: #a8a8bf;
+    --text-3: #8a8aa2;
+    --accent-1: #8b5cf6;
+    --accent-2: #ec4899;
+    --danger: #f43f5e;
+    --success: #34d399;
+    --warn: #fbbf24;
+    --grad: linear-gradient(135deg, #8b5cf6, #ec4899);
+    --grad-danger: linear-gradient(135deg, #f43f5e, #e11d48);
+    --radius-lg: 24px;
+    --radius-md: 16px;
+    --radius-sm: 12px;
+    --ease: cubic-bezier(.22, .61, .36, 1);
+    --dur: .22s;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  /* ============ Base ============ */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    min-height: 100dvh;
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg-0);
+    color: var(--text-1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 16px;
+    gap: 28px;
+    overflow-x: hidden;
+  }
+
+  /* Aurora background */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background:
+      radial-gradient(640px 420px at 12% 8%, rgba(139, 92, 246, .18), transparent 62%),
+      radial-gradient(720px 500px at 88% 18%, rgba(236, 72, 153, .12), transparent 62%),
+      radial-gradient(820px 640px at 50% 108%, rgba(59, 130, 246, .12), transparent 62%);
+  }
+
+  /* Subtle grid */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    opacity: .5;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, .028) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, .028) 1px, transparent 1px);
+    background-size: 46px 46px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 35%, #000 20%, transparent 78%);
+    mask-image: radial-gradient(ellipse 80% 70% at 50% 35%, #000 20%, transparent 78%);
+  }
+
+  ::selection { background: rgba(139, 92, 246, .45); }
+
+  ::-webkit-scrollbar { width: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .14); border-radius: 8px; }
+
+  :focus-visible {
+    outline: 2px solid var(--accent-1);
+    outline-offset: 3px;
+    border-radius: 8px;
+  }
+
+  .hidden { display: none !important; }
+
+  svg { flex: none; }
+
+  /* ============ Hero ============ */
+  .hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    text-align: center;
+    animation: rise .5s var(--ease) both;
+  }
+
+  .logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    background: var(--grad);
+    display: grid;
+    place-items: center;
+    color: #fff;
+    box-shadow: 0 12px 34px -8px rgba(139, 92, 246, .55), inset 0 1px 0 rgba(255, 255, 255, .35);
+  }
+  .logo svg { width: 28px; height: 28px; }
+
+  .hero h1 {
+    font-size: clamp(1.7rem, 4vw, 2.15rem);
+    font-weight: 800;
+    letter-spacing: -.03em;
+    line-height: 1.15;
+  }
+  .grad {
+    background: var(--grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .tagline {
+    max-width: 520px;
+    color: var(--text-2);
+    font-size: .95rem;
+    margin-top: 8px;
+  }
+
+  /* Feature chips */
+  .chips {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: .78rem;
+    font-weight: 500;
+    color: var(--text-2);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 7px 14px;
+    animation: rise .5s var(--ease) both;
+  }
+  .chip:nth-child(2) { animation-delay: .06s; }
+  .chip:nth-child(3) { animation-delay: .12s; }
+  .chip svg { width: 14px; height: 14px; color: var(--accent-1); }
+
+  /* ============ Card ============ */
+  .card {
+    width: 100%;
+    max-width: 720px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, .055), rgba(255, 255, 255, .02));
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    backdrop-filter: blur(24px) saturate(140%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: 0 28px 64px -24px rgba(0, 0, 0, .65), inset 0 1px 0 rgba(255, 255, 255, .06);
+    animation: rise .55s var(--ease) .08s both;
+  }
+
+  /* ============ Stage ============ */
+  .stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius-md);
+    background: #04040a;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06);
+    transition: box-shadow .3s var(--ease);
+  }
+  .stage.recording {
+    box-shadow: inset 0 0 0 1.5px rgba(244, 63, 94, .45), inset 0 0 60px rgba(244, 63, 94, .07);
+  }
+  .stage video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: transparent;
+  }
+
+  /* Idle state */
+  .idle {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-align: center;
+    padding: 24px;
+  }
+  .idle-icon {
+    position: relative;
+    width: 76px;
+    height: 76px;
+    display: grid;
+    place-items: center;
+    color: var(--accent-1);
+    border-radius: 50%;
+    background: rgba(139, 92, 246, .1);
+    border: 1px solid rgba(139, 92, 246, .3);
+    margin-bottom: 6px;
+  }
+  .idle-icon::after {
+    content: "";
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(139, 92, 246, .35);
+    animation: ring 2.6s var(--ease) infinite;
+  }
+  .idle-icon svg { width: 32px; height: 32px; }
+  .idle-title { font-weight: 700; font-size: 1.05rem; }
+  .idle-hint { color: var(--text-3); font-size: .85rem; max-width: 320px; }
+
+  /* REC chip */
+  .rec {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(8, 8, 14, .75);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(244, 63, 94, .45);
+    color: #fff;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    z-index: 2;
+  }
+  .rec-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--danger);
+    animation: pulse 1.5s ease-out infinite;
+  }
+  .rec-timer {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: .85rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    margin-left: 2px;
+  }
+
+  /* ============ Meta chips ============ */
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .8rem;
+    font-weight: 500;
+    color: var(--text-2);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .meta-chip svg { width: 13px; height: 13px; color: var(--accent-1); }
+
+  /* ============ Controls ============ */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    min-height: 48px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 14px;
+    font: inherit;
+    font-size: .95rem;
+    font-weight: 600;
+    color: #fff;
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), filter var(--dur) var(--ease), background var(--dur) var(--ease);
+    will-change: transform;
+  }
+  .btn svg { width: 18px; height: 18px; }
+  .btn:active { transform: scale(.96); }
+
+  .btn-record {
+    background: var(--grad-danger);
+    box-shadow: 0 10px 28px -10px rgba(244, 63, 94, .55);
+  }
+  .btn-record:hover { filter: brightness(1.08); transform: translateY(-1px); }
+
+  .btn-stop {
+    background: var(--grad-danger);
+    box-shadow: 0 10px 28px -10px rgba(244, 63, 94, .55);
+  }
+  .btn-stop:hover { filter: brightness(1.08); transform: translateY(-1px); }
+
+  .btn-download {
+    background: var(--grad);
+    box-shadow: 0 10px 28px -10px rgba(139, 92, 246, .55);
+  }
+  .btn-download:hover { filter: brightness(1.08); transform: translateY(-1px); }
+
+  .btn-ghost {
+    background: var(--surface-strong);
+    border: 1px solid var(--border);
+    color: var(--text-1);
+  }
+  .btn-ghost:hover { background: rgba(255, 255, 255, .13); transform: translateY(-1px); }
+
+  /* Audio toggle switch */
+  .switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+    padding: 6px 8px;
+    border-radius: 12px;
+    transition: background var(--dur) var(--ease);
+  }
+  .switch:hover { background: rgba(255, 255, 255, .05); }
+  .switch input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+  .switch input:focus-visible + .track {
+    outline: 2px solid var(--accent-1);
+    outline-offset: 3px;
+  }
+  .track {
+    position: relative;
+    width: 44px;
+    height: 26px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .14);
+    border: 1px solid var(--border);
+    transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+    flex: none;
+  }
+  .thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .45);
+    transition: transform var(--dur) var(--ease);
+  }
+  .switch input:checked + .track {
+    background: var(--grad);
+    border-color: transparent;
+  }
+  .switch input:checked + .track .thumb { transform: translateX(18px); }
+  .switch-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: .88rem;
+    font-weight: 500;
+    color: var(--text-2);
+  }
+  .switch-label svg { width: 16px; height: 16px; color: var(--text-2); }
+
+  /* ============ Messages ============ */
+  .msg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 1.4em;
+    margin-top: 16px;
+    font-size: .87rem;
+    color: var(--text-2);
+    text-align: center;
+  }
+  .msg-icon { width: 17px; height: 17px; }
+  .msg.note, .msg.error, .msg.success, .msg.info {
+    padding: 9px 15px;
+    border-radius: var(--radius-sm);
+    border: 1px solid;
+    font-weight: 500;
+  }
+  .msg.note   { color: #fbbf24; background: rgba(251, 191, 36, .07);  border-color: rgba(251, 191, 36, .28); }
+  .msg.error  { color: #fb7185; background: rgba(244, 63, 94, .08);   border-color: rgba(244, 63, 94, .3); }
+  .msg.success{ color: #34d399; background: rgba(52, 211, 153, .08);  border-color: rgba(52, 211, 153, .28); }
+  .msg.info   { color: #c4b5fd; background: rgba(139, 92, 246, .08);  border-color: rgba(139, 92, 246, .3); }
+
+  /* ============ Footer note ============ */
+  .privacy-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: .8rem;
+    color: var(--text-3);
+    text-align: center;
+    animation: rise .5s var(--ease) .16s both;
+  }
+  .privacy-note svg { width: 15px; height: 15px; color: var(--success); }
+
+  /* ============ Animations ============ */
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(244, 63, 94, .55); }
+    70%  { box-shadow: 0 0 0 9px rgba(244, 63, 94, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+  }
+  @keyframes ring {
+    0%   { transform: scale(.9); opacity: .7; }
+    70%, 100% { transform: scale(1.12); opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important;
+    }
+  }
+
+  /* ============ Mobile ============ */
+  @media (max-width: 520px) {
+    body { padding: 32px 14px; justify-content: flex-start; }
+    .card { padding: 14px; border-radius: 20px; }
+    .controls { flex-direction: column; align-items: stretch; }
+    .controls .btn { width: 100%; }
+    .switch { justify-content: center; padding: 10px; }
+    .hero h1 { font-size: 1.6rem; }
+    .chips { gap: 6px; }
+    .chip { padding: 6px 11px; }
+  }
+</style>
+</head>
+<body>
+
+  <header class="hero">
+    <span class="logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m22 8-6 4 6 4V8Z"/>
+        <rect x="2" y="6" width="14" height="12" rx="2"/>
+      </svg>
+    </span>
+    <div>
+      <h1>Screen <span class="grad">Recorder</span></h1>
+      <p class="tagline">Rekam layar, tab, atau jendela — langsung dari browser, tanpa install.</p>
+    </div>
+    <ul class="chips" aria-label="Keunggulan">
+      <li class="chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
+        100% lokal — tanpa server
+      </li>
+      <li class="chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.33-6 4Z"/></svg>
+        Tanpa batas durasi
+      </li>
+      <li class="chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
+        Output WebM
+      </li>
+    </ul>
+  </header>
+
+  <main>
+    <section class="card" aria-label="Perekam layar">
+      <!-- Stage: idle / live preview / hasil -->
+      <div class="stage" id="stage">
+        <div class="idle" id="idleState">
+          <span class="idle-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </span>
+          <p class="idle-title">Siap merekam</p>
+          <p class="idle-hint">Pilih tab, jendela, atau seluruh layar saat browser memintanya.</p>
+        </div>
+        <video id="preview" class="hidden" muted autoplay playsinline></video>
+        <video id="result" class="hidden" controls playsinline></video>
+        <div class="rec hidden" id="recChip">
+          <span class="rec-dot" aria-hidden="true"></span>
+          REC
+          <span class="rec-timer" id="timer" aria-hidden="true">00:00</span>
+        </div>
+      </div>
+
+      <!-- Detail rekaman -->
+      <div class="meta hidden" id="metaRow" aria-label="Detail rekaman">
+        <span class="meta-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span id="metaDuration">00:00</span>
+        </span>
+        <span class="meta-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+          <span id="metaSize">—</span>
+        </span>
+        <span class="meta-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
+          WebM
+        </span>
+      </div>
+
+      <!-- Kontrol -->
+      <div class="controls">
+        <button id="startBtn" class="btn btn-record" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6.5" fill="currentColor"/></svg>
+          Rekam Layar
+        </button>
+        <button id="stopBtn" class="btn btn-stop hidden" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2.5" fill="currentColor"/></svg>
+          Stop
+        </button>
+        <a id="downloadBtn" class="btn btn-download hidden" download>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download
+        </a>
+        <button id="againBtn" class="btn btn-ghost hidden" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><polyline points="21 3 21 8 16 8"/></svg>
+          Rekam Lagi
+        </button>
+        <label class="switch" id="audioWrap">
+          <input type="checkbox" id="audioToggle" checked>
+          <span class="track" aria-hidden="true"><span class="thumb"></span></span>
+          <span class="switch-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+            Sertakan audio
+          </span>
+        </label>
+      </div>
+
+      <p id="msg" class="msg" role="status" aria-live="polite"></p>
+    </section>
+
+    <p class="privacy-note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Rekaman tidak pernah meninggalkan perangkatmu — buka DevTools → Network untuk membuktikannya.
+    </p>
+  </main>
+
+<script>
+"use strict";
+
+// ponytail: seluruh app satu file, native getDisplayMedia + MediaRecorder, tanpa dependency.
+const MIME_CANDIDATES = [
+  "video/webm;codecs=vp9,opus",
+  "video/webm;codecs=vp8,opus",
+  "video/webm",
+];
+
+const ICONS = {
+  note: '<svg class="msg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  error: '<svg class="msg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+  success: '<svg class="msg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>',
+  info: '<svg class="msg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>',
+};
+
+const el = {
+  stage: document.getElementById("stage"),
+  idle: document.getElementById("idleState"),
+  preview: document.getElementById("preview"),
+  result: document.getElementById("result"),
+  recChip: document.getElementById("recChip"),
+  timer: document.getElementById("timer"),
+  metaRow: document.getElementById("metaRow"),
+  metaDuration: document.getElementById("metaDuration"),
+  metaSize: document.getElementById("metaSize"),
+  start: document.getElementById("startBtn"),
+  stop: document.getElementById("stopBtn"),
+  download: document.getElementById("downloadBtn"),
+  again: document.getElementById("againBtn"),
+  audioWrap: document.getElementById("audioWrap"),
+  audio: document.getElementById("audioToggle"),
+  msg: document.getElementById("msg"),
+};
+
+let stream = null;
+let recorder = null;
+let chunks = [];
+let timerId = null;
+let resultUrl = null;
+let startedAt = 0;
+let hadNote = false;
+
+function pickMimeType() {
+  return MIME_CANDIDATES.find(t => MediaRecorder.isTypeSupported(t)) || "";
+}
+
+function show(node, visible) {
+  node.classList.toggle("hidden", !visible);
+}
+
+function setMessage(text, kind = "") {
+  el.msg.className = "msg" + (kind ? " " + kind : "");
+  el.msg.replaceChildren();
+  if (ICONS[kind]) {
+    // String SVG statis dari map, bukan input user.
+    const tmp = document.createElement("div");
+    tmp.innerHTML = ICONS[kind];
+    const icon = tmp.firstElementChild;
+    icon.setAttribute("aria-hidden", "true");
+    el.msg.appendChild(icon);
+  }
+  el.msg.appendChild(document.createTextNode(text));
+}
+
+function formatDuration(totalSeconds) {
+  const m = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+  const s = String(totalSeconds % 60).padStart(2, "0");
+  return `${m}:${s}`;
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  const i = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+  return (bytes / Math.pow(1024, i)).toFixed(i ? 1 : 0) + " " + units[i];
+}
+
+function startTimer() {
+  startedAt = Date.now();
+  el.timer.textContent = "00:00";
+  timerId = setInterval(() => {
+    el.timer.textContent = formatDuration(Math.floor((Date.now() - startedAt) / 1000));
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerId !== null) { clearInterval(timerId); timerId = null; }
+}
+
+function cleanupStream() {
+  if (stream) {
+    stream.getTracks().forEach(t => t.stop());
+    stream = null;
+  }
+}
+
+async function startRecording() {
+  // Cegah double-click membuka dua picker sekaligus.
+  if (recorder && recorder.state !== "inactive") return;
+
+  // Trust boundary: API browser. Cek dukungan sebelum dipakai.
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+    setMessage("Browser ini tidak mendukung perekaman layar. Coba Chrome/Edge terbaru.", "error");
+    return;
+  }
+
+  const mimeType = pickMimeType();
+  if (!mimeType) {
+    setMessage("Browser ini tidak mendukung format rekaman WebM.", "error");
+    return;
+  }
+
+  setMessage("");
+
+  try {
+    stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: el.audio.checked });
+  } catch (err) {
+    // NotAllowedError = user membatalkan / menolak izin. Perlakukan sama: kembali idle.
+    if (err && err.name === "NotAllowedError") {
+      setMessage("Perekaman dibatalkan.", "note");
+    } else {
+      setMessage("Gagal memulai rekaman: " + (err && err.message ? err.message : err), "error");
+    }
+    cleanupStream();
+    return;
+  }
+
+  chunks = [];
+  hadNote = false;
+  try {
+    recorder = new MediaRecorder(stream, { mimeType });
+  } catch (err) {
+    setMessage("Gagal membuat perekam: " + (err && err.message ? err.message : err), "error");
+    cleanupStream();
+    return;
+  }
+
+  recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+  recorder.onstop = finalizeRecording;
+
+  // User menekan "Stop sharing" bawaan browser → hentikan rekaman.
+  stream.getVideoTracks()[0].addEventListener("ended", stopRecording);
+
+  recorder.start();
+
+  // Peringatkan bila user tak membagikan audio (mis. lupa centang "Share tab audio").
+  if (stream.getAudioTracks().length === 0) {
+    hadNote = true;
+    setMessage("Catatan: tidak ada audio yang dibagikan — rekaman jadi tanpa suara.", "note");
+  } else {
+    setMessage("Merekam — klik Stop atau tombol stop di bilah browser untuk selesai.", "info");
+  }
+
+  // Preview live
+  el.preview.srcObject = stream;
+  show(el.idle, false);
+  show(el.preview, true);
+  show(el.result, false);
+  show(el.recChip, true);
+  show(el.start, false);
+  show(el.stop, true);
+  show(el.download, false);
+  show(el.again, false);
+  show(el.metaRow, false);
+  show(el.audioWrap, false);
+  el.stage.classList.add("recording");
+  startTimer();
+}
+
+function stopRecording() {
+  // Idempoten: dipanggil dari tombol Stop maupun event "ended".
+  if (recorder && recorder.state !== "inactive") {
+    recorder.stop();
+  }
+}
+
+function finalizeRecording() {
+  stopTimer();
+  cleanupStream();
+  el.preview.srcObject = null;
+  show(el.preview, false);
+  show(el.recChip, false);
+  show(el.stop, false);
+  el.stage.classList.remove("recording");
+
+  if (chunks.length === 0) {
+    show(el.idle, true);
+    show(el.audioWrap, true);
+    show(el.start, true);
+    setMessage("Tidak ada data yang terekam.", "error");
+    return;
+  }
+
+  const blob = new Blob(chunks, { type: chunks[0].type || "video/webm" });
+  chunks = []; // lepaskan data rekaman lebih awal
+  if (resultUrl) URL.revokeObjectURL(resultUrl); // hindari bocor memori dari rekaman sebelumnya
+  resultUrl = URL.createObjectURL(blob);
+
+  el.result.src = resultUrl;
+  show(el.result, true);
+
+  // Detail rekaman: durasi + ukuran
+  el.metaDuration.textContent = formatDuration(Math.floor((Date.now() - startedAt) / 1000));
+  el.metaSize.textContent = formatBytes(blob.size);
+  show(el.metaRow, true);
+
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  el.download.href = resultUrl;
+  el.download.download = `recording-${stamp}.webm`;
+  show(el.download, true);
+  show(el.again, true);
+  show(el.audioWrap, true);
+
+  if (hadNote) {
+    setMessage("Rekaman selesai — tanpa audio.", "note");
+  } else {
+    setMessage("Rekaman selesai.", "success");
+  }
+}
+
+function reset() {
+  if (resultUrl) { URL.revokeObjectURL(resultUrl); resultUrl = null; }
+  el.result.src = "";
+  show(el.idle, true);
+  show(el.result, false);
+  show(el.metaRow, false);
+  show(el.download, false);
+  show(el.again, false);
+  show(el.start, true);
+  show(el.audioWrap, true);
+  setMessage("");
+}
+
+el.start.addEventListener("click", startRecording);
+el.stop.addEventListener("click", stopRecording);
+el.again.addEventListener("click", reset);
+</script>
+</body>
+</html>
