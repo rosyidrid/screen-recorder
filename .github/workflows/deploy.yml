@@ -19,7 +19,7 @@ jobs:
           script: |
             set -e
             
-            cd ../var/www/recorder.rosyidrid.com/
+            cd recorder.rosyidrid.com/
 
             git fetch origin main
 

@@ -4,189 +4,325 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>Screen Recorder — 100% Lokal</title>
+<meta name="theme-color" content="#08090c">
+<meta name="description" content="Perekam layar berbasis browser. Pilih tab, jendela, atau seluruh layar — berkas diproses dan disimpan sepenuhnya di perangkatmu.">
+<title>Screen Recorder — rekam layar tanpa server</title>
 <style>
-  /* ============ Design Tokens ============ */
+  /* ============================================================
+     Design tokens — "instrument" palette
+     Satu aksen (hijau = lokal/aman), merah hanya untuk status rekam.
+     ============================================================ */
   :root {
     color-scheme: dark;
-    --bg-0: #06060b;
-    --surface: rgba(255, 255, 255, .045);
-    --surface-strong: rgba(255, 255, 255, .09);
-    --border: rgba(255, 255, 255, .09);
-    --text-1: #f5f5fa;
-    --text-2: #a8a8bf;
-    --text-3: #8a8aa2;
-    --accent-1: #8b5cf6;
-    --accent-2: #ec4899;
-    --danger: #f43f5e;
-    --success: #34d399;
-    --warn: #fbbf24;
-    --grad: linear-gradient(135deg, #8b5cf6, #ec4899);
-    --grad-danger: linear-gradient(135deg, #f43f5e, #e11d48);
-    --radius-lg: 24px;
-    --radius-md: 16px;
-    --radius-sm: 12px;
+
+    --bg: #08090c;
+    --panel: #0d1015;
+    --panel-2: #0a0c10;
+    --stage: #05060a;
+
+    --line: rgba(255, 255, 255, .075);
+    --line-2: rgba(255, 255, 255, .14);
+
+    --fg: #ecedf0;
+    --fg-2: #9ba2ae;
+    --fg-3: #7c8391;
+
+    --accent: #5fd3a6;
+    --accent-bg: rgba(95, 211, 166, .1);
+    --accent-line: rgba(95, 211, 166, .3);
+
+    --rec: #d92d3e;
+    --rec-hi: #e53c4c;
+
+    --warn: #e8b04b;
+    --danger: #ff8a93;
+
+    --r-sm: 7px;
+    --r-md: 10px;
+    --r-lg: 14px;
+
     --ease: cubic-bezier(.22, .61, .36, 1);
-    --dur: .22s;
-    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    --t: 180ms;
+
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   }
 
-  /* ============ Base ============ */
+  /* ============================================================
+     Base
+     ============================================================ */
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   html { -webkit-text-size-adjust: 100%; }
 
   body {
     min-height: 100dvh;
-    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background: var(--bg-0);
-    color: var(--text-1);
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 48px 16px;
-    gap: 28px;
+    background: var(--bg);
+    color: var(--fg);
+    font: 400 16px/1.6 var(--sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
   }
 
-  /* Aurora background */
+  /* Satu sumber cahaya redup di atas — kedalaman tanpa dekorasi berlebih. */
   body::before {
     content: "";
     position: fixed;
     inset: 0;
-    z-index: -2;
-    background:
-      radial-gradient(640px 420px at 12% 8%, rgba(139, 92, 246, .18), transparent 62%),
-      radial-gradient(720px 500px at 88% 18%, rgba(236, 72, 153, .12), transparent 62%),
-      radial-gradient(820px 640px at 50% 108%, rgba(59, 130, 246, .12), transparent 62%);
-  }
-
-  /* Subtle grid */
-  body::after {
-    content: "";
-    position: fixed;
-    inset: 0;
     z-index: -1;
-    opacity: .5;
-    background-image:
-      linear-gradient(rgba(255, 255, 255, .028) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, .028) 1px, transparent 1px);
-    background-size: 46px 46px;
-    -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 35%, #000 20%, transparent 78%);
-    mask-image: radial-gradient(ellipse 80% 70% at 50% 35%, #000 20%, transparent 78%);
+    pointer-events: none;
+    background: radial-gradient(900px 460px at 82% -12%, rgba(95, 211, 166, .07), transparent 68%);
   }
 
-  ::selection { background: rgba(139, 92, 246, .45); }
+  ::selection { background: rgba(95, 211, 166, .28); }
 
-  ::-webkit-scrollbar { width: 10px; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .14); border-radius: 8px; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, .12);
+    border-radius: 999px;
+    border: 2px solid var(--bg);
+  }
 
   :focus-visible {
-    outline: 2px solid var(--accent-1);
-    outline-offset: 3px;
-    border-radius: 8px;
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: var(--r-sm);
   }
 
+  a { color: inherit; }
+  svg { flex: none; }
   .hidden { display: none !important; }
 
-  svg { flex: none; }
+  .skip {
+    position: absolute;
+    left: 12px;
+    top: -60px;
+    z-index: 50;
+    background: var(--fg);
+    color: #0a0c10;
+    font-size: .85rem;
+    font-weight: 600;
+    padding: 9px 14px;
+    border-radius: var(--r-md);
+    text-decoration: none;
+    transition: top var(--t) var(--ease);
+  }
+  .skip:focus { top: 12px; }
 
-  /* ============ Hero ============ */
-  .hero {
+  /* ============================================================
+     Top bar
+     ============================================================ */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 20px;
-    text-align: center;
-    animation: rise .5s var(--ease) both;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 56px;
+    padding: 10px clamp(18px, 4vw, 32px);
+    border-bottom: 1px solid var(--line);
+    background: rgba(8, 9, 12, .86);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
   }
 
-  .logo {
-    width: 56px;
-    height: 56px;
-    border-radius: 18px;
-    background: var(--grad);
-    display: grid;
-    place-items: center;
-    color: #fff;
-    box-shadow: 0 12px 34px -8px rgba(139, 92, 246, .55), inset 0 1px 0 rgba(255, 255, 255, .35);
-  }
-  .logo svg { width: 28px; height: 28px; }
-
-  .hero h1 {
-    font-size: clamp(1.7rem, 4vw, 2.15rem);
-    font-weight: 800;
-    letter-spacing: -.03em;
-    line-height: 1.15;
-  }
-  .grad {
-    background: var(--grad);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
-  .tagline {
-    max-width: 520px;
-    color: var(--text-2);
-    font-size: .95rem;
-    margin-top: 8px;
-  }
-
-  /* Feature chips */
-  .chips {
-    list-style: none;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-  }
-  .chip {
+  .brand {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    font-size: .78rem;
-    font-weight: 500;
-    color: var(--text-2);
-    background: var(--surface);
-    border: 1px solid var(--border);
+    gap: 10px;
+    font-size: .95rem;
+    font-weight: 600;
+    letter-spacing: -.015em;
+  }
+  .brand-mark {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    color: var(--accent);
+    background: var(--accent-bg);
+    border: 1px solid var(--accent-line);
+  }
+  .brand-mark svg { width: 16px; height: 16px; }
+
+  .topbar-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
     border-radius: 999px;
-    padding: 7px 14px;
-    animation: rise .5s var(--ease) both;
+    border: 1px solid var(--accent-line);
+    background: var(--accent-bg);
+    color: var(--accent);
+    font: 500 11px/1 var(--mono);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    white-space: nowrap;
   }
-  .chip:nth-child(2) { animation-delay: .06s; }
-  .chip:nth-child(3) { animation-delay: .12s; }
-  .chip svg { width: 14px; height: 14px; color: var(--accent-1); }
+  .badge svg { width: 13px; height: 13px; }
+  .build {
+    font: 500 11px/1 var(--mono);
+    letter-spacing: .06em;
+    color: var(--fg-3);
+    white-space: nowrap;
+  }
 
-  /* ============ Card ============ */
-  .card {
+  /* ============================================================
+     Shell — kolom kontrol + kolom konsol
+     ============================================================ */
+  .shell {
     width: 100%;
-    max-width: 720px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, .055), rgba(255, 255, 255, .02));
-    -webkit-backdrop-filter: blur(24px) saturate(140%);
-    backdrop-filter: blur(24px) saturate(140%);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 20px;
-    box-shadow: 0 28px 64px -24px rgba(0, 0, 0, .65), inset 0 1px 0 rgba(255, 255, 255, .06);
-    animation: rise .55s var(--ease) .08s both;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: clamp(32px, 5vw, 60px) clamp(18px, 4vw, 32px) 72px;
+    display: grid;
+    grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+    gap: clamp(28px, 4vw, 56px);
+    align-items: start;
   }
 
-  /* ============ Stage ============ */
+  /* ============================================================
+     Kolom kiri — konteks
+     ============================================================ */
+  .eyebrow {
+    font: 500 11px/1 var(--mono);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .intro h1 {
+    margin-top: 16px;
+    font-size: clamp(1.85rem, 3vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -.035em;
+    text-wrap: balance;
+  }
+
+  .lede {
+    margin-top: 16px;
+    max-width: 48ch;
+    color: var(--fg-2);
+    font-size: .95rem;
+    line-height: 1.65;
+  }
+
+  .facts {
+    list-style: none;
+    margin-top: 30px;
+    border-top: 1px solid var(--line);
+  }
+  .facts li {
+    display: flex;
+    gap: 12px;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .facts svg {
+    width: 17px;
+    height: 17px;
+    margin-top: 2px;
+    color: var(--accent);
+  }
+  .fact-title {
+    font-size: .875rem;
+    font-weight: 600;
+    letter-spacing: -.01em;
+  }
+  .fact-desc {
+    margin-top: 2px;
+    font-size: .82rem;
+    line-height: 1.5;
+    color: var(--fg-3);
+  }
+
+  /* ============================================================
+     Console
+     ============================================================ */
+  .console {
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .04),
+      0 32px 64px -40px rgba(0, 0, 0, .95);
+    overflow: hidden;
+    animation: enter .45s var(--ease) both;
+  }
+
+  .console-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(255, 255, 255, .015);
+  }
+  .head-label {
+    font: 500 11px/1 var(--mono);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+  }
+  .state {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font: 500 11px/1 var(--mono);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--fg-2);
+  }
+  .state-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--fg-3);
+    transition: background var(--t) var(--ease);
+  }
+  .console[data-state="recording"] .state-dot {
+    background: var(--rec);
+    animation: pulse 1.6s var(--ease) infinite;
+  }
+  .console[data-state="recording"] .state { color: var(--fg); }
+  .console[data-state="done"] .state-dot { background: var(--accent); }
+
+  /* ---------- Stage ---------- */
   .stage {
     position: relative;
     width: 100%;
     aspect-ratio: 16 / 9;
-    border-radius: var(--radius-md);
-    background: #04040a;
+    background: var(--stage);
     overflow: hidden;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06);
-    transition: box-shadow .3s var(--ease);
   }
-  .stage.recording {
-    box-shadow: inset 0 0 0 1.5px rgba(244, 63, 94, .45), inset 0 0 60px rgba(244, 63, 94, .07);
+  .stage::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    box-shadow: inset 0 0 0 1px transparent;
+    transition: box-shadow .25s var(--ease);
+  }
+  .stage.recording::after {
+    box-shadow:
+      inset 0 0 0 1.5px rgba(217, 45, 62, .75),
+      inset 0 0 34px rgba(217, 45, 62, .12);
   }
   .stage video {
     position: absolute;
@@ -194,270 +330,283 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
-    background: transparent;
   }
 
-  /* Idle state */
+  /* Idle — kanvas kosong dengan penanda bingkai */
   .idle {
     position: absolute;
     inset: 0;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 14px;
+    padding: 18px;
     text-align: center;
-    padding: 24px;
+    background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, .055) 1px, transparent 0);
+    background-size: 22px 22px;
   }
-  .idle-icon {
+  .idle-frame {
     position: relative;
-    width: 76px;
-    height: 76px;
     display: grid;
     place-items: center;
-    color: var(--accent-1);
-    border-radius: 50%;
-    background: rgba(139, 92, 246, .1);
-    border: 1px solid rgba(139, 92, 246, .3);
-    margin-bottom: 6px;
+    width: 84px;
+    height: 60px;
+    color: var(--fg-2);
   }
-  .idle-icon::after {
+  .idle-frame svg { width: 26px; height: 26px; }
+  .idle-frame::before {
     content: "";
     position: absolute;
-    inset: -8px;
-    border-radius: 50%;
-    border: 1.5px solid rgba(139, 92, 246, .35);
-    animation: ring 2.6s var(--ease) infinite;
+    inset: 0;
+    border-radius: 6px;
+    background:
+      linear-gradient(var(--line-2), var(--line-2)) left top / 14px 1px no-repeat,
+      linear-gradient(var(--line-2), var(--line-2)) left top / 1px 12px no-repeat,
+      linear-gradient(var(--line-2), var(--line-2)) right top / 14px 1px no-repeat,
+      linear-gradient(var(--line-2), var(--line-2)) right top / 1px 12px no-repeat,
+      linear-gradient(var(--line-2), var(--line-2)) left bottom / 14px 1px no-repeat,
+      linear-gradient(var(--line-2), var(--line-2)) left bottom / 1px 12px no-repeat,
+      linear-gradient(var(--line-2), var(--line-2)) right bottom / 14px 1px no-repeat,
+      linear-gradient(var(--line-2), var(--line-2)) right bottom / 1px 12px no-repeat;
   }
-  .idle-icon svg { width: 32px; height: 32px; }
-  .idle-title { font-weight: 700; font-size: 1.05rem; }
-  .idle-hint { color: var(--text-3); font-size: .85rem; max-width: 320px; }
+  .idle-title {
+    font-size: .95rem;
+    font-weight: 600;
+    letter-spacing: -.01em;
+  }
+  .idle-hint {
+    max-width: 34ch;
+    font-size: .82rem;
+    line-height: 1.55;
+    color: var(--fg-3);
+  }
 
-  /* REC chip */
+  /* Badge REC */
   .rec {
     position: absolute;
     top: 12px;
     left: 12px;
+    z-index: 4;
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    padding: 6px 12px;
+    gap: 8px;
+    padding: 6px 11px;
     border-radius: 999px;
-    background: rgba(8, 8, 14, .75);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(244, 63, 94, .45);
+    background: rgba(6, 7, 10, .82);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(217, 45, 62, .5);
+    font: 600 11px/1 var(--mono);
+    letter-spacing: .14em;
     color: #fff;
-    font-size: .72rem;
-    font-weight: 700;
-    letter-spacing: .12em;
-    z-index: 2;
   }
   .rec-dot {
-    width: 9px;
-    height: 9px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
-    background: var(--danger);
-    animation: pulse 1.5s ease-out infinite;
+    background: var(--rec);
+    animation: pulse 1.6s var(--ease) infinite;
   }
   .rec-timer {
-    font-family: var(--mono);
+    font-weight: 500;
+    letter-spacing: .02em;
     font-variant-numeric: tabular-nums;
-    font-size: .85rem;
-    font-weight: 600;
-    letter-spacing: 0;
-    margin-left: 2px;
+    color: rgba(255, 255, 255, .72);
   }
 
-  /* ============ Meta chips ============ */
+  /* ---------- Meta ---------- */
   .meta {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 16px;
+    gap: 12px 40px;
+    padding: 15px 16px;
+    border-bottom: 1px solid var(--line);
+    animation: rise .28s var(--ease) both;
   }
-  .meta-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: .8rem;
-    font-weight: 500;
-    color: var(--text-2);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 6px 12px;
+  .meta-key {
+    font: 500 11px/1 var(--mono);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+  }
+  .meta-val {
+    margin-top: 6px;
+    font: 500 14px/1 var(--mono);
     font-variant-numeric: tabular-nums;
+    color: var(--fg);
   }
-  .meta-chip svg { width: 13px; height: 13px; color: var(--accent-1); }
 
-  /* ============ Controls ============ */
+  /* ---------- Controls ---------- */
   .controls {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: center;
-    gap: 12px;
-    margin-top: 20px;
+    gap: 10px;
+    padding: 16px;
   }
+  .controls-spacer { flex: 1 1 auto; }
 
   .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 9px;
-    min-height: 48px;
-    padding: 12px 24px;
-    border: none;
-    border-radius: 14px;
-    font: inherit;
-    font-size: .95rem;
-    font-weight: 600;
-    color: #fff;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 1px solid transparent;
+    border-radius: var(--r-md);
+    font: 600 .9rem/1 var(--sans);
+    letter-spacing: -.01em;
     text-decoration: none;
     cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
-    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), filter var(--dur) var(--ease), background var(--dur) var(--ease);
-    will-change: transform;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      background var(--t) var(--ease),
+      border-color var(--t) var(--ease),
+      color var(--t) var(--ease),
+      transform 120ms var(--ease);
   }
-  .btn svg { width: 18px; height: 18px; }
-  .btn:active { transform: scale(.96); }
+  .btn svg { width: 16px; height: 16px; }
+  .btn:active { transform: translateY(1px); }
 
-  .btn-record {
-    background: var(--grad-danger);
-    box-shadow: 0 10px 28px -10px rgba(244, 63, 94, .55);
+  .btn-primary {
+    background: var(--fg);
+    color: #0a0c10;
   }
-  .btn-record:hover { filter: brightness(1.08); transform: translateY(-1px); }
+  .btn-primary:hover { background: #fff; }
 
-  .btn-stop {
-    background: var(--grad-danger);
-    box-shadow: 0 10px 28px -10px rgba(244, 63, 94, .55);
+  .btn-rec {
+    background: var(--rec);
+    color: #fff;
   }
-  .btn-stop:hover { filter: brightness(1.08); transform: translateY(-1px); }
-
-  .btn-download {
-    background: var(--grad);
-    box-shadow: 0 10px 28px -10px rgba(139, 92, 246, .55);
-  }
-  .btn-download:hover { filter: brightness(1.08); transform: translateY(-1px); }
+  .btn-rec:hover { background: var(--rec-hi); }
 
   .btn-ghost {
-    background: var(--surface-strong);
-    border: 1px solid var(--border);
-    color: var(--text-1);
+    background: rgba(255, 255, 255, .04);
+    border-color: var(--line-2);
+    color: var(--fg);
   }
-  .btn-ghost:hover { background: rgba(255, 255, 255, .13); transform: translateY(-1px); }
+  .btn-ghost:hover { background: rgba(255, 255, 255, .08); }
 
-  /* Audio toggle switch */
+  /* ---------- Switch audio ---------- */
   .switch {
     position: relative;
     display: inline-flex;
     align-items: center;
     gap: 10px;
+    min-height: 44px;
+    padding: 0 10px;
+    border-radius: var(--r-md);
     cursor: pointer;
     user-select: none;
-    padding: 6px 8px;
-    border-radius: 12px;
-    transition: background var(--dur) var(--ease);
+    transition: background var(--t) var(--ease);
   }
-  .switch:hover { background: rgba(255, 255, 255, .05); }
+  .switch:hover { background: rgba(255, 255, 255, .045); }
   .switch input {
     position: absolute;
-    opacity: 0;
     width: 1px;
     height: 1px;
+    opacity: 0;
   }
   .switch input:focus-visible + .track {
-    outline: 2px solid var(--accent-1);
-    outline-offset: 3px;
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
   .track {
     position: relative;
-    width: 44px;
-    height: 26px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, .14);
-    border: 1px solid var(--border);
-    transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
     flex: none;
+    width: 38px;
+    height: 22px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .11);
+    border: 1px solid var(--line-2);
+    transition: background var(--t) var(--ease), border-color var(--t) var(--ease);
   }
   .thumb {
     position: absolute;
     top: 2px;
     left: 2px;
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     background: #fff;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, .45);
-    transition: transform var(--dur) var(--ease);
+    transition: transform var(--t) var(--ease);
   }
   .switch input:checked + .track {
-    background: var(--grad);
-    border-color: transparent;
+    background: var(--accent);
+    border-color: var(--accent);
   }
-  .switch input:checked + .track .thumb { transform: translateX(18px); }
+  .switch input:checked + .track .thumb { transform: translateX(16px); }
   .switch-label {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    font-size: .88rem;
+    font-size: .85rem;
     font-weight: 500;
-    color: var(--text-2);
+    color: var(--fg-2);
   }
-  .switch-label svg { width: 16px; height: 16px; color: var(--text-2); }
+  .switch-label svg { width: 15px; height: 15px; color: var(--fg-3); }
 
-  /* ============ Messages ============ */
+  /* ---------- Status ---------- */
   .msg {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
     gap: 8px;
-    min-height: 1.4em;
-    margin-top: 16px;
-    font-size: .87rem;
-    color: var(--text-2);
-    text-align: center;
+    min-height: 20px;
+    padding: 0 16px 16px;
+    font-size: .83rem;
+    line-height: 1.5;
+    color: var(--fg-2);
   }
-  .msg-icon { width: 17px; height: 17px; }
+  .msg-icon { width: 15px; height: 15px; margin-top: 2px; }
   .msg.note, .msg.error, .msg.success, .msg.info {
-    padding: 9px 15px;
-    border-radius: var(--radius-sm);
+    margin: 0 16px 16px;
+    padding: 10px 13px;
     border: 1px solid;
-    font-weight: 500;
+    border-radius: var(--r-sm);
   }
-  .msg.note   { color: #fbbf24; background: rgba(251, 191, 36, .07);  border-color: rgba(251, 191, 36, .28); }
-  .msg.error  { color: #fb7185; background: rgba(244, 63, 94, .08);   border-color: rgba(244, 63, 94, .3); }
-  .msg.success{ color: #34d399; background: rgba(52, 211, 153, .08);  border-color: rgba(52, 211, 153, .28); }
-  .msg.info   { color: #c4b5fd; background: rgba(139, 92, 246, .08);  border-color: rgba(139, 92, 246, .3); }
+  .msg.note    { color: var(--warn);   background: rgba(232, 176, 75, .08);  border-color: rgba(232, 176, 75, .3); }
+  .msg.error   { color: var(--danger); background: rgba(217, 45, 62, .1);    border-color: rgba(217, 45, 62, .38); }
+  .msg.success { color: var(--accent); background: var(--accent-bg);         border-color: var(--accent-line); }
+  .msg.info    { color: #b9c0cc;       background: rgba(255, 255, 255, .05); border-color: var(--line-2); }
 
-  /* ============ Footer note ============ */
-  .privacy-note {
+  /* ---------- Console footer ---------- */
+  .console-foot {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: .8rem;
-    color: var(--text-3);
-    text-align: center;
-    animation: rise .5s var(--ease) .16s both;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 14px 16px;
+    border-top: 1px solid var(--line);
+    background: rgba(0, 0, 0, .22);
+    font-size: .78rem;
+    line-height: 1.55;
+    color: var(--fg-3);
   }
-  .privacy-note svg { width: 15px; height: 15px; color: var(--success); }
+  .console-foot svg {
+    width: 14px;
+    height: 14px;
+    margin-top: 2px;
+    color: var(--accent);
+  }
 
-  /* ============ Animations ============ */
+  /* ============================================================
+     Motion
+     ============================================================ */
+  @keyframes enter {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+  }
   @keyframes rise {
-    from { opacity: 0; transform: translateY(14px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: none; }
   }
   @keyframes pulse {
-    0%   { box-shadow: 0 0 0 0 rgba(244, 63, 94, .55); }
-    70%  { box-shadow: 0 0 0 9px rgba(244, 63, 94, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
-  }
-  @keyframes ring {
-    0%   { transform: scale(.9); opacity: .7; }
-    70%, 100% { transform: scale(1.12); opacity: 0; }
+    0%   { box-shadow: 0 0 0 0 rgba(217, 45, 62, .55); }
+    70%  { box-shadow: 0 0 0 6px rgba(217, 45, 62, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(217, 45, 62, 0); }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -468,120 +617,213 @@
     }
   }
 
-  /* ============ Mobile ============ */
-  @media (max-width: 520px) {
-    body { padding: 32px 14px; justify-content: flex-start; }
-    .card { padding: 14px; border-radius: 20px; }
-    .controls { flex-direction: column; align-items: stretch; }
+  /* ============================================================
+     Responsive
+     ============================================================ */
+  @media (max-width: 900px) {
+    .shell {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 28px;
+      padding-top: 28px;
+    }
+    .facts { margin-top: 24px; }
+  }
+
+  @media (max-width: 560px) {
+    .build { display: none; }
+    .shell { padding-bottom: 44px; }
+    .controls { padding: 14px; gap: 8px; }
     .controls .btn { width: 100%; }
-    .switch { justify-content: center; padding: 10px; }
-    .hero h1 { font-size: 1.6rem; }
-    .chips { gap: 6px; }
-    .chip { padding: 6px 11px; }
+    .controls-spacer { display: none; }
+    .switch { justify-content: center; width: 100%; }
+    .meta { gap: 12px 26px; padding: 14px; }
+    .msg { padding: 0 14px 14px; }
+    .msg.note, .msg.error, .msg.success, .msg.info { margin: 0 14px 14px; }
+    .console-head { padding: 10px 14px; }
+    .idle { padding: 14px; gap: 10px; }
+    .idle-frame { width: 62px; height: 44px; }
+    .idle-frame svg { width: 22px; height: 22px; }
+    .idle-title { font-size: .875rem; }
+    .idle-hint { font-size: .78rem; }
   }
 </style>
 </head>
 <body>
 
-  <header class="hero">
-    <span class="logo" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="m22 8-6 4 6 4V8Z"/>
-        <rect x="2" y="6" width="14" height="12" rx="2"/>
+<a class="skip" href="#main">Lewati ke konten</a>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2.5" y="4.5" width="19" height="15" rx="3.5"/>
+        <circle cx="12" cy="12" r="3.1" fill="currentColor" stroke="none"/>
       </svg>
     </span>
-    <div>
-      <h1>Screen <span class="grad">Recorder</span></h1>
-      <p class="tagline">Rekam layar, tab, atau jendela — langsung dari browser, tanpa install.</p>
-    </div>
-    <ul class="chips" aria-label="Keunggulan">
-      <li class="chip">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
-        100% lokal — tanpa server
+    <span>Screen Recorder</span>
+  </div>
+  <div class="topbar-meta">
+    <span class="badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>
+        <path d="m9 12 2 2 4-4"/>
+      </svg>
+      Lokal
+    </span>
+    <span class="build">WebM · tanpa server</span>
+  </div>
+</header>
+
+<main class="shell" id="main">
+
+  <section class="intro">
+    <p class="eyebrow">01 — Rekaman layar</p>
+    <h1>Rekam layar, langsung di browser.</h1>
+    <p class="lede">
+      Pilih tab, jendela, atau seluruh layar saat browser memintanya. Tidak ada instalasi
+      dan tidak ada upload — berkas dibuat serta disimpan sepenuhnya di perangkatmu.
+    </p>
+
+    <ul class="facts">
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>
+          <path d="m9 12 2 2 4-4"/>
+        </svg>
+        <div>
+          <p class="fact-title">100% lokal</p>
+          <p class="fact-desc">Tidak ada berkas yang dikirim ke server. Halaman ini bahkan tidak melakukan satu pun permintaan jaringan.</p>
+        </div>
       </li>
-      <li class="chip">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.33-6 4Z"/></svg>
-        Tanpa batas durasi
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.33-6 4Z"/>
+        </svg>
+        <div>
+          <p class="fact-title">Tanpa batas durasi</p>
+          <p class="fact-desc">Timer berjalan selama kamu butuhkan. Ukuran berkas final tetap ditampilkan setelah rekaman berhenti.</p>
+        </div>
       </li>
-      <li class="chip">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
-        Output WebM
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 2.5H7a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7.5Z"/>
+          <path d="M14 2.5v5h5"/>
+          <path d="m10.5 12.8 4 2.2-4 2.2Z" fill="currentColor" stroke="none"/>
+        </svg>
+        <div>
+          <p class="fact-title">Output WebM</p>
+          <p class="fact-desc">VP9/Opus bila didukung browser, dengan fallback otomatis ke VP8. Siap diputar ulang atau disunting.</p>
+        </div>
       </li>
     </ul>
-  </header>
+  </section>
 
-  <main>
-    <section class="card" aria-label="Perekam layar">
-      <!-- Stage: idle / live preview / hasil -->
-      <div class="stage" id="stage">
-        <div class="idle" id="idleState">
-          <span class="idle-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          </span>
-          <p class="idle-title">Siap merekam</p>
-          <p class="idle-hint">Pilih tab, jendela, atau seluruh layar saat browser memintanya.</p>
-        </div>
-        <video id="preview" class="hidden" muted autoplay playsinline></video>
-        <video id="result" class="hidden" controls playsinline></video>
-        <div class="rec hidden" id="recChip">
-          <span class="rec-dot" aria-hidden="true"></span>
-          REC
-          <span class="rec-timer" id="timer" aria-hidden="true">00:00</span>
-        </div>
+  <section class="console" id="console" data-state="idle" aria-label="Perekam layar">
+    <div class="console-head">
+      <span class="head-label">Pratinjau</span>
+      <span class="state">
+        <span class="state-dot" aria-hidden="true"></span>
+        <span id="stateLabel">Siap</span>
+      </span>
+    </div>
+
+    <!-- Stage: idle / pratinjau langsung / hasil -->
+    <div class="stage" id="stage">
+      <div class="idle" id="idleState">
+        <span class="idle-frame" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2.5" y="4.5" width="19" height="15" rx="3.5"/>
+            <path d="M8.5 21.5h7"/>
+            <path d="M12 19.5v2"/>
+          </svg>
+        </span>
+        <p class="idle-title">Siap merekam</p>
+        <p class="idle-hint">Tekan Rekam Layar, lalu pilih tab, jendela, atau seluruh layar pada dialog browser.</p>
       </div>
 
-      <!-- Detail rekaman -->
-      <div class="meta hidden" id="metaRow" aria-label="Detail rekaman">
-        <span class="meta-chip">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <span id="metaDuration">00:00</span>
-        </span>
-        <span class="meta-chip">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
-          <span id="metaSize">—</span>
-        </span>
-        <span class="meta-chip">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
-          WebM
-        </span>
+      <video id="preview" class="hidden" muted autoplay playsinline></video>
+      <video id="result" class="hidden" controls playsinline></video>
+
+      <div class="rec hidden" id="recChip">
+        <span class="rec-dot" aria-hidden="true"></span>
+        REC
+        <span class="rec-timer" id="timer" aria-hidden="true">00:00</span>
       </div>
+    </div>
 
-      <!-- Kontrol -->
-      <div class="controls">
-        <button id="startBtn" class="btn btn-record" type="button">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6.5" fill="currentColor"/></svg>
-          Rekam Layar
-        </button>
-        <button id="stopBtn" class="btn btn-stop hidden" type="button">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2.5" fill="currentColor"/></svg>
-          Stop
-        </button>
-        <a id="downloadBtn" class="btn btn-download hidden" download>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download
-        </a>
-        <button id="againBtn" class="btn btn-ghost hidden" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><polyline points="21 3 21 8 16 8"/></svg>
-          Rekam Lagi
-        </button>
-        <label class="switch" id="audioWrap">
-          <input type="checkbox" id="audioToggle" checked>
-          <span class="track" aria-hidden="true"><span class="thumb"></span></span>
-          <span class="switch-label">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-            Sertakan audio
-          </span>
-        </label>
+    <!-- Detail rekaman -->
+    <div class="meta hidden" id="metaRow" aria-label="Detail rekaman">
+      <div class="meta-item">
+        <p class="meta-key">Durasi</p>
+        <p class="meta-val" id="metaDuration">00:00</p>
       </div>
+      <div class="meta-item">
+        <p class="meta-key">Ukuran</p>
+        <p class="meta-val" id="metaSize">—</p>
+      </div>
+      <div class="meta-item">
+        <p class="meta-key">Format</p>
+        <p class="meta-val">WebM</p>
+      </div>
+    </div>
 
-      <p id="msg" class="msg" role="status" aria-live="polite"></p>
-    </section>
+    <!-- Kontrol -->
+    <div class="controls">
+      <button id="startBtn" class="btn btn-primary" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="#d92d3e"/></svg>
+        Rekam Layar
+      </button>
 
-    <p class="privacy-note">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      Rekaman tidak pernah meninggalkan perangkatmu — buka DevTools → Network untuk membuktikannya.
+      <button id="stopBtn" class="btn btn-rec hidden" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2.5" fill="currentColor"/></svg>
+        Stop
+      </button>
+
+      <a id="downloadBtn" class="btn btn-primary hidden" download>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Download
+      </a>
+
+      <button id="againBtn" class="btn btn-ghost hidden" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/>
+          <polyline points="21 3 21 8 16 8"/>
+        </svg>
+        Rekam Lagi
+      </button>
+
+      <span class="controls-spacer"></span>
+
+      <label class="switch" id="audioWrap">
+        <input type="checkbox" id="audioToggle" checked>
+        <span class="track" aria-hidden="true"><span class="thumb"></span></span>
+        <span class="switch-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+          </svg>
+          Sertakan audio
+        </span>
+      </label>
+    </div>
+
+    <p id="msg" class="msg" role="status" aria-live="polite"></p>
+
+    <p class="console-foot">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="11" width="18" height="11" rx="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+      Rekaman tidak pernah meninggalkan perangkatmu — buka DevTools → Network untuk membuktikannya tidak ada permintaan keluar.
     </p>
-  </main>
+  </section>
+
+</main>
 
 <script>
 "use strict";
@@ -601,6 +843,8 @@ const ICONS = {
 };
 
 const el = {
+  console: document.getElementById("console"),
+  stateLabel: document.getElementById("stateLabel"),
   stage: document.getElementById("stage"),
   idle: document.getElementById("idleState"),
   preview: document.getElementById("preview"),
@@ -633,6 +877,12 @@ function pickMimeType() {
 
 function show(node, visible) {
   node.classList.toggle("hidden", !visible);
+}
+
+// Status konsol: idle → recording → done. Teks + warna, bukan warna saja.
+function setState(state, label) {
+  el.console.dataset.state = state;
+  el.stateLabel.textContent = label;
 }
 
 function setMessage(text, kind = "") {
@@ -738,7 +988,7 @@ async function startRecording() {
     setMessage("Merekam — klik Stop atau tombol stop di bilah browser untuk selesai.", "info");
   }
 
-  // Preview live
+  // Pratinjau langsung
   el.preview.srcObject = stream;
   show(el.idle, false);
   show(el.preview, true);
@@ -751,6 +1001,7 @@ async function startRecording() {
   show(el.metaRow, false);
   show(el.audioWrap, false);
   el.stage.classList.add("recording");
+  setState("recording", "Merekam");
   startTimer();
 }
 
@@ -774,6 +1025,7 @@ function finalizeRecording() {
     show(el.idle, true);
     show(el.audioWrap, true);
     show(el.start, true);
+    setState("idle", "Siap");
     setMessage("Tidak ada data yang terekam.", "error");
     return;
   }
@@ -798,6 +1050,8 @@ function finalizeRecording() {
   show(el.again, true);
   show(el.audioWrap, true);
 
+  setState("done", "Selesai");
+
   if (hadNote) {
     setMessage("Rekaman selesai — tanpa audio.", "note");
   } else {
@@ -815,6 +1069,7 @@ function reset() {
   show(el.again, false);
   show(el.start, true);
   show(el.audioWrap, true);
+  setState("idle", "Siap");
   setMessage("");
 }
 
