@@ -21,15 +21,28 @@ jobs:
             
             cd recorder.rosyidrid.com/
 
-            git fetch origin main
+            # ─────────────────────────────────────
+            # 1. AMBIL STATE TERKINI (TANPA PULL)
+            # ─────────────────────────────────────
+            git fetch origin
 
-            # Cek perubahan sebelum pull
-            CHANGED=$(git diff HEAD origin/main --name-only)
+            BASE=$(git rev-parse HEAD)
+            TARGET=$(git rev-parse origin/main)
 
-            # stashing perubahan yang tidak terduga
-            git stash
-          
-            git pull origin main
+            echo "📌 Base commit  : $BASE"
+            echo "📌 Target commit : $TARGET"
+
+            # AMBIL CHANGES SEBELUM RESET
+            CHANGED=$(git diff --name-only $BASE $TARGET || true)
+
+            echo "📋 Files changed:"
+            echo "$CHANGED"
+
+            # ─────────────────────────────────────
+            # 2. UPDATE WORKING DIRECTORY
+            # ─────────────────────────────────────
+            git reset --hard origin/main
+            git clean -fd
 
       # === Notifikasi Discord ===
       - name: Notify Discord (embed)
